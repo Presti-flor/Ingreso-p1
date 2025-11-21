@@ -1,10 +1,10 @@
 {
-  "name": "flores-api",
+  "name": "Ingreso Prestige 1",
   "version": "1.0.0",
   "description": "API para registro de flores con guardado en PostgreSQL y Google Sheets",
-  "main": "server.js",
+  "main": "INGRESOP1.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node INGRESOP1.js"
   },
   "keywords": [
     "express",
