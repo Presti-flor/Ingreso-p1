@@ -10,13 +10,13 @@ async function testGoogleSheets() {
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
 
-  const doc = new GoogleSpreadsheet('1JAsY9wkpp-mhawsrZjSXYeHt3BR3Kuf5KNZNM5FJLx0', serviceAccountAuth);
+  const doc = new GoogleSpreadsheet('1QLMdDyv78yY52QRj7poCcAnj9Rh9jVL-Y5EUF81xnLE', serviceAccountAuth);
   await doc.loadInfo();
 
-  let sheet = doc.sheetsByTitle['prueba'];
+  let sheet = doc.sheetsByTitle['Ingreso P1'];
   if (!sheet) {
     sheet = await doc.addSheet({
-      title: 'prueba',
+      title: 'Ingreso P1',
       headerValues: ['id', 'variedad', 'bloque', 'tallos', 'tamali', 'fecha', 'etapa', 'creado_iso'],
     });
   }
