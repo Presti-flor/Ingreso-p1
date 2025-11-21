@@ -1,0 +1,25 @@
+{
+  "name": "flores-api",
+  "version": "1.0.0",
+  "description": "API para registro de flores con guardado en PostgreSQL y Google Sheets",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "express",
+    "postgresql",
+    "google-sheets",
+    "api",
+    "flores"
+  ],
+  "author": "charly",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^5.1.0",
+    "google-auth-library": "^10.3.0",
+    "google-spreadsheet": "^5.0.2",
+    "pg": "^8.16.3"
+  }
+}
