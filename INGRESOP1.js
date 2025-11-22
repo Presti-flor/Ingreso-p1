@@ -514,7 +514,7 @@ app.get("/", (req, res) => {
   `);
 });
 
-app.post("/admin/refresh-cache",async (req, res)=>{
+app.get("/admin/refresh-cache", async (req, res) => {
   try {
     const token = req.query.token || req.headers["x-admin-token"];
     if (token !== process.env.ADMIN_REFRESH_TOKEN) {
