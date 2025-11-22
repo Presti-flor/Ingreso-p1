@@ -514,6 +514,28 @@ app.get("/", (req, res) => {
   `);
 });
 
+app.post("/admin/refresh-cache", async (req, res) => {
+  try {
+    const token = req.query.token || req.headers["x-admin-token"];
+    if (token !== process.env.ADMIN_REFRESH_TOKEN) {
+      return res.status(403).json({ error: "No autorizado" });
+    }
+
+    const info = await refreshCache();
+    res.json({
+      message: "Caché recargada correctamente desde Google Sheets",
+      info,
+    });
+  } catch (err) {
+    console.error("Error en /admin/refresh-cache:", err);
+    res.status(500).json({
+      error: "Error al recargar caché",
+      detail: err.message,
+    });
+  }
+});
+
+
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log("🚀 Servidor activo en puerto " + PORT);
