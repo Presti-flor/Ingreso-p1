@@ -394,10 +394,7 @@ return res.send(
             <div class="big-emoji">⚠️</div>
             <h1 class="title">Este código ya fue escaneado</h1>
             <div class="body">
-              <p>
-                Ya existe un registro con los mismos datos. Para evitar duplicados,
-                revisa primero si el registro anterior es válido.
-              </p>
+              
               <p style="margin-top:10px;">
                 Solo continúa si estás <span class="highlight">seguro</span>
                 de que quieres registrar nuevamente.
@@ -408,9 +405,7 @@ return res.send(
               >
                 Registrar de todas formas
               </button>
-              <p class="small">
-                Si no estás seguro, puedes simplemente cerrar esta ventana. 🧠
-              </p>
+             
             </div>
           </main>
         </body>
