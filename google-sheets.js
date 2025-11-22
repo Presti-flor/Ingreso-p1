@@ -1,10 +1,13 @@
+// google-sheets.js
 const { GoogleSpreadsheet } = require('google-spreadsheet');
 const { JWT } = require('google-auth-library');
 
+// 👉 Configuración básica
 const SPREADSHEET_ID = '1QLMdDyv78yY52QRj7poCcAnj9Rh9jVL-Y5EUF81xnLE';
 const SHEET_NAME = 'Ingreso P1';
 
-// 1) Credenciales desde ENV (Railway)
+// ================== CREDENCIALES ==================
+
 function getCreds() {
   const raw = process.env.google_sheets_credentials;
   if (!raw) {
@@ -13,8 +16,16 @@ function getCreds() {
   return JSON.parse(raw);
 }
 
-// 2) Conectar con la hoja
+// ================== CONEXIÓN A GOOGLE SHEETS ==================
+
+let sheetInstance = null; // guardamos la hoja ya inicializada
+
 async function getSheet() {
+  // Si ya tenemos la hoja lista, la devolvemos de una vez
+  if (sheetInstance) {
+    return sheetInstance;
+  }
+
   const creds = getCreds();
 
   const serviceAccountAuth = new JWT({
@@ -30,31 +41,40 @@ async function getSheet() {
   if (!sheet) {
     sheet = await doc.addSheet({
       title: SHEET_NAME,
-      headerValues: ['id', 'variedad', 'bloque', 'tallos', 'tamali', 'fecha', 'etapa', 'creado_iso'],
+      headerValues: [
+        'id',
+        'variedad',
+        'bloque',
+        'tallos',
+        'tamali',
+        'fecha',
+        'etapa',
+        'creado_iso',
+      ],
     });
   }
 
   await sheet.loadHeaderRow();
-  return sheet;
+
+  sheetInstance = sheet;
+  console.log('📄 Hoja de cálculo lista:', SHEET_NAME);
+
+  return sheetInstance;
 }
 
-// ----------- CACHÉ EN MEMORIA PARA NO LEER SIEMPRE --------------
+// ================== CACHÉ EN MEMORIA ==================
 
-// guardamos las filas y sus “claves” ya calculadas
 let cache = {
-  rows: [],        // array de rows de google-sheets
-  keys: new Set(), // conjunto de llaves buildKey(...)
-  loadedAt: 0      // timestamp (ms)
+  rows: [],        // filas de Google Sheets
+  keys: new Set(), // llaves buildKey(...)
+  loadedAt: 0      // timestamp (ms) de última carga completa
 };
-
-// cuánto tiempo consideramos válida la caché (ms)
-const CACHE_TTL_MS = 120000; // 2 minutos
 
 function norm(v) {
   return (v ?? '').toString().trim();
 }
 
-// llave única de un registro
+// construir llave única de un registro
 function buildKey({ id, variedad, bloque, tallos, tamali, fecha, etapa }) {
   return [
     norm(id),
@@ -67,16 +87,8 @@ function buildKey({ id, variedad, bloque, tallos, tamali, fecha, etapa }) {
   ].join('|');
 }
 
-// cargar o reutilizar cache
-async function getCachedRowsAndKeys() {
-  const now = Date.now();
-
-  // si la caché está reciente, la reutilizamos
-  if (cache.rows.length > 0 && now - cache.loadedAt < CACHE_TTL_MS) {
-    console.log('⚡ Usando datos en caché (sin leer de Sheets)');
-    return cache;
-  }
-
+// Carga TODA la hoja y recalcula la caché (se usa SOLO al inicio o en refresh manual)
+async function loadCacheFromSheet() {
   const sheet = await getSheet();
   const rows = await sheet.getRows();
   const keys = new Set();
@@ -98,22 +110,34 @@ async function getCachedRowsAndKeys() {
   cache = {
     rows,
     keys,
-    loadedAt: now,
+    loadedAt: Date.now(),
   };
 
-  console.log(`📖 Leídos ${rows.length} registros de Google Sheets (actualizando caché)`);
+  console.log(`📖 Cache recargada desde Google Sheets: ${rows.length} filas`);
   return cache;
 }
 
-// 🔍 ¿Existe ya un registro con EXACTAMENTE la misma combinación?
+// Asegura que la caché esté cargada (si está vacía, lee la hoja UNA sola vez)
+async function ensureCacheLoaded() {
+  if (cache.rows.length > 0) {
+    // Ya cargada, usarla
+    return cache;
+  }
+  // Primera vez (o después de un refresh manual)
+  return await loadCacheFromSheet();
+}
+
+// ================== API PÚBLICA ==================
+
+// 🔍 Verifica si existe registro exactamente igual
 async function existsSameRecord(data) {
   const targetKey = buildKey(data);
 
-  const { keys, rows } = await getCachedRowsAndKeys();
+  const { keys, rows } = await ensureCacheLoaded();
 
   const encontrado = keys.has(targetKey);
 
-  // debug para ver las últimas combinaciones
+  // debug opcional: últimas combinaciones
   const total = rows.length;
   const start = Math.max(0, total - 3);
   const ultimas = rows.slice(start).map(r => {
@@ -135,7 +159,7 @@ async function existsSameRecord(data) {
   return encontrado;
 }
 
-// 📝 Siempre agrega fila nueva (no borra ni actualiza)
+// 📝 Agrega fila nueva y ACTUALIZA caché en memoria
 async function writeToSheet(data) {
   const sheet = await getSheet();
 
@@ -153,15 +177,28 @@ async function writeToSheet(data) {
   const newRow = await sheet.addRow(rowObj);
   console.log('✅ fila escrita en Sheets:', rowObj);
 
-  // actualizamos la caché si ya estaba cargada
+  // Si la caché ya estaba cargada, la mantenemos al día sin recargar todo
   if (cache.rows.length > 0) {
     cache.rows.push(newRow);
     cache.keys.add(buildKey(rowObj));
-    // no tocamos loadedAt para que siga vigente
+    // no cambiamos loadedAt porque no es una recarga completa
   }
+
+  return newRow;
+}
+
+// 🔄 Refresh manual de caché (para cuando alguien toca la hoja directamente en Google)
+async function refreshCache() {
+  console.log('🔄 Forzando recarga de caché desde Google Sheets...');
+  const c = await loadCacheFromSheet();
+  return {
+    totalRows: c.rows.length,
+    loadedAt: c.loadedAt,
+  };
 }
 
 module.exports = {
   writeToSheet,
   existsSameRecord,
+  refreshCache,
 };
