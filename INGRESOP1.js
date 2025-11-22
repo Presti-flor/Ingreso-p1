@@ -263,25 +263,16 @@ app.get("/api/registrar", async (req, res) => {
 return res.send(
   baseTemplate({
     title: "Registro guardado correctamente",
-    subtitle: "✔️ Operación exitosa",
     bgColor: "#ecfdf3",          // Verde muy suave
-    textColor: "#065f46",        // Verde oscuro para buena lectura
+    textColor: "#40ff00ff",        // Verde oscuro para buena lectura
     bodyHtml: `
-      <p style="text-align:center;font-size:3rem;margin-bottom:8px;">✔️</p>
-
-      <p style="font-size:1.25rem; margin-bottom:18px; color:#065f46;">
-        El registro se guardó correctamente.
-      </p>
+      <p style="text-align:center;font-size:3rem;margin-bottom:8px;">✅</p>
 
       <p style="margin-bottom:10px; font-size:1.1rem; color:#064e3b;">
         Variedad: <span class="highlight">${variedad}</span><br/>
         Bloque: <span class="highlight">${bloque}</span><br/>
         Tallos: <span class="highlight">${tallos}</span><br/>
         Tamaño: <span class="highlight">${tamali}</span>
-      </p>
-
-      <p class="small" style="color:#065f46;">
-        Puedes cerrar esta ventana y continuar con tu trabajo. 🌱
       </p>
     `,
   })
