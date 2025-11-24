@@ -15,39 +15,24 @@ const pool = new Pool({
   },
 });
 
-// 👉 Función para guardar en Postgres
 async function saveToPostgres({ id, variedad, bloque, tallos, tamaño, fecha, etapa }) {
-  // Asegúrate de crear esta tabla en tu BD:
-  //
-  // CREATE TABLE IF NOT EXISTS registrosp1 (
-  //   id SERIAL PRIMARY KEY,
-  //   id_qr TEXT NOT NULL,
-  //   variedad TEXT NOT NULL,
-  //   bloque INTEGER NOT NULL,
-  //   tallos INTEGER NOT NULL,
-  //   tamaño TEXT NOT NULL,
-  //   fecha DATE NOT NULL,
-  //   etapa TEXT,
-  //   creado_en TIMESTAMPTZ DEFAULT NOW(),
-  //   CONSTRAINT ux_registro_unico UNIQUE (id_qr, variedad, bloque, tallos, tamaño, fecha, etapa)
-  // );
-  //
   const query = `
     INSERT INTO registrosp1
       (id, variedad, bloque, tallos, tamaño, fecha, etapa)
     VALUES
       ($1,   $2,      $3,    $4,     $5,    $6,    $7)
-    ON CONFLICT (id, variedad, bloque, tallos, tamaño, fecha, etapa)
-    DO NOTHING
+    ON CONFLICT DO NOTHING
     RETURNING *;
   `;
 
   const values = [id, variedad, parseInt(bloque), tallos, tamaño, fecha, etapa || null];
 
-  const result = await pool.query(query, values);
-  return result.rows[0] || null; // null si fue conflicto (ya existía)
-}
+  console.log("🧪 INSERT Postgres →", query);
+  console.log("🧪 VALUES →", values);
 
+  const result = await pool.query(query, values);
+  return result.rows[0] || null;
+}
 // Lista de IPs autorizadas
 const authorizedIPs = [
   "190.60.35.50",
