@@ -33,7 +33,7 @@ async function saveToPostgres({ id, variedad, bloque, tallos, tamali, fecha, eta
   // );
   //
   const query = `
-    INSERT INTO registros_flores
+    INSERT INTO Registros P1
       (id_qr, variedad, bloque, tallos, tamali, fecha, etapa)
     VALUES
       ($1,   $2,      $3,    $4,     $5,    $6,    $7)
