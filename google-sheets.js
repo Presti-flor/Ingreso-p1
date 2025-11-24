@@ -46,7 +46,7 @@ async function getSheet() {
         'variedad',
         'bloque',
         'tallos',
-        'tamali',
+        'tamaño',
         'fecha',
         'etapa',
         'creado_iso',
@@ -75,13 +75,13 @@ function norm(v) {
 }
 
 // construir llave única de un registro
-function buildKey({ id, variedad, bloque, tallos, tamali, fecha, etapa }) {
+function buildKey({ id, variedad, bloque, tallos, tamaño, fecha, etapa }) {
   return [
     norm(id),
     norm(variedad),
     norm(bloque),
     norm(tallos),
-    norm(tamali),
+    norm(tamaño),
     norm(fecha),
     norm(etapa),
   ].join('|');
@@ -100,7 +100,7 @@ async function loadCacheFromSheet() {
       variedad: raw[1],
       bloque: raw[2],
       tallos: raw[3],
-      tamali: raw[4],
+      tamaño: raw[4],
       fecha: raw[5],
       etapa: raw[6],
     };
@@ -147,7 +147,7 @@ async function existsSameRecord(data) {
       variedad: raw[1],
       bloque: raw[2],
       tallos: raw[3],
-      tamali: raw[4],
+      tamaño: raw[4],
       fecha: raw[5],
       etapa: raw[6],
     });
@@ -168,7 +168,7 @@ async function writeToSheet(data) {
     variedad: data.variedad,
     bloque: data.bloque,
     tallos: data.tallos,
-    tamali: data.tamali,
+    tamaño: data.tamaño,
     fecha: data.fecha || new Date().toLocaleDateString('es-ES'),
     etapa: data.etapa || '',
     creado_iso: new Date().toISOString(),
