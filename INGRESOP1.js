@@ -16,7 +16,7 @@ const pool = new Pool({
 });
 
 // 👉 Función para guardar en Postgres
-async function saveToPostgres({ id, variedad, bloque, tallos, tamali, fecha, etapa }) {
+async function saveToPostgres({ id, variedad, bloque, tallos, tamaño, fecha, etapa }) {
   // Asegúrate de crear esta tabla en tu BD:
   //
   // CREATE TABLE IF NOT EXISTS registros_flores (
@@ -37,12 +37,12 @@ async function saveToPostgres({ id, variedad, bloque, tallos, tamali, fecha, eta
       (id, variedad, bloque, tallos, tamaño, fecha, etapa)
     VALUES
       ($1,   $2,      $3,    $4,     $5,    $6,    $7)
-    ON CONFLICT (id, variedad, bloque, tallos, tamali, fecha, etapa)
+    ON CONFLICT (id, variedad, bloque, tallos, tamaño, fecha, etapa)
     DO NOTHING
     RETURNING *;
   `;
 
-  const values = [id, variedad, parseInt(bloque), tallos, tamali, fecha, etapa || null];
+  const values = [id, variedad, parseInt(bloque), tallos, tamaño, fecha, etapa || null];
 
   const result = await pool.query(query, values);
   return result.rows[0] || null; // null si fue conflicto (ya existía)
@@ -76,14 +76,14 @@ async function processAndSaveData({
   variedad,
   bloque,
   tallos,
-  tamali,
+  tamaño,
   fecha,
   etapa,
   force,
 }) {
   if (!id) throw new Error("Falta el parámetro id");
-  if (!variedad || !bloque || !tallos || !tamali) {
-    throw new Error("Faltan datos obligatorios: variedad, bloque, tallos, tamali");
+  if (!variedad || !bloque || !tallos || !tamaño) {
+    throw new Error("Faltan datos obligatorios: variedad, bloque, tallos, tamaño");
   }
 
   const tallosNum = parseInt(tallos);
@@ -97,7 +97,7 @@ async function processAndSaveData({
       variedad,
       bloque,
       tallos: tallosNum,
-      tamali,
+      tamaño,
       fecha: fechaProcesada,
       etapa,
     });
@@ -115,7 +115,7 @@ async function processAndSaveData({
     variedad,
     bloque,
     tallos: tallosNum,
-    tamali,
+    tamaño,
     fecha: fechaProcesada,
     etapa,
   });
@@ -126,7 +126,7 @@ async function processAndSaveData({
     variedad,
     bloque,
     tallos: tallosNum,
-    tamali,
+    tamaño,
     fecha: fechaProcesada,
     etapa,
   });
@@ -136,7 +136,7 @@ async function processAndSaveData({
     variedad,
     bloque,
     tallos: tallosNum,
-    tamali,
+    tamaño,
     fecha: fechaProcesada,
     etapa,
   });
