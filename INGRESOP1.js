@@ -11,7 +11,7 @@ app.use(express.urlencoded({ extended: true }));
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL, // En Railway pones esta variable
   ssl: {
-    rejectUnauthorized: false, // Railway normalmente necesita esto en true->false para Node simple
+    rejectUnauthorized: false,
   },
 });
 
@@ -19,25 +19,25 @@ const pool = new Pool({
 async function saveToPostgres({ id, variedad, bloque, tallos, tamaño, fecha, etapa }) {
   // Asegúrate de crear esta tabla en tu BD:
   //
-  // CREATE TABLE IF NOT EXISTS registros_flores (
+  // CREATE TABLE IF NOT EXISTS registrosp1 (
   //   id SERIAL PRIMARY KEY,
   //   id_qr TEXT NOT NULL,
   //   variedad TEXT NOT NULL,
   //   bloque INTEGER NOT NULL,
   //   tallos INTEGER NOT NULL,
-  //   tamali TEXT NOT NULL,
+  //   tamaño TEXT NOT NULL,
   //   fecha DATE NOT NULL,
   //   etapa TEXT,
   //   creado_en TIMESTAMPTZ DEFAULT NOW(),
-  //   CONSTRAINT ux_registro_unico UNIQUE (id_qr, variedad, bloque, tallos, tamali, fecha, etapa)
+  //   CONSTRAINT ux_registro_unico UNIQUE (id_qr, variedad, bloque, tallos, tamaño, fecha, etapa)
   // );
   //
   const query = `
     INSERT INTO registrosp1
-      (id, variedad, bloque, tallos, tamaño, fecha, etapa)
+      (id_qr, variedad, bloque, tallos, tamaño, fecha, etapa)
     VALUES
       ($1,   $2,      $3,    $4,     $5,    $6,    $7)
-    ON CONFLICT (id, variedad, bloque, tallos, tamaño, fecha, etapa)
+    ON CONFLICT (id_qr, variedad, bloque, tallos, tamaño, fecha, etapa)
     DO NOTHING
     RETURNING *;
   `;
@@ -280,10 +280,13 @@ app.get("/api/registrar", async (req, res) => {
         );
     }
 
-    const { id, variedad, bloque, tallos, tamali, fecha, etapa, force } = req.query;
+    // Aquí aceptamos tanto tamali (QR viejo) como tamaño (si algún día lo cambias)
+    const { id, variedad, bloque, tallos, tamali, tamaño, fecha, etapa, force } = req.query;
+    const tamañoFinal = tamaño || tamali;
+
     const forceFlag = force === "true" || force === "1";
 
-    if (!id || !variedad || !bloque || !tallos || !tamali) {
+    if (!id || !variedad || !bloque || !tallos || !tamañoFinal) {
       return res
         .status(400)
         .send(
@@ -294,7 +297,7 @@ app.get("/api/registrar", async (req, res) => {
             textColor: "#78350f",
             bodyHtml: `
               <p>El código escaneado no trae toda la información necesaria.</p>
-              <p style="margin-top:8px;">Verifica que el QR tenga: <span class="highlight">id, variedad, bloque, tallos y tamali</span>.</p>
+              <p style="margin-top:8px;">Verifica que el QR tenga: <span class="highlight">id, variedad, bloque, tallos y tamaño</span>.</p>
               <p class="small">Puedes escanear nuevamente el código o pedir que generen uno actualizado.</p>
             `,
           })
@@ -306,7 +309,7 @@ app.get("/api/registrar", async (req, res) => {
       variedad,
       bloque,
       tallos,
-      tamali,
+      tamaño: tamañoFinal,
       fecha,
       etapa,
       force: forceFlag,
@@ -325,7 +328,7 @@ app.get("/api/registrar", async (req, res) => {
             Variedad: <span class="highlight">${variedad}</span><br/>
             Bloque: <span class="highlight">${bloque}</span><br/>
             Tallos: <span class="highlight">${tallos}</span><br/>
-            Tamaño: <span class="highlight">${tamali}</span>
+            Tamaño: <span class="highlight">${tamañoFinal}</span>
           </p>
         `,
       })
@@ -558,7 +561,7 @@ app.get("/", (req, res) => {
         <code>
           /api/registrar?id=1&variedad=Freedom&bloque=6&tallos=20&tamali=Largo
         </code>
-        <p style="margin-top:12px;font-size:0.9rem;opacity:0.8;">
+        <p style="margin-top:12px;font-size:0.9rem;opacity:0.8%;">
           El procesamiento es ligero y está optimizado para respuestas rápidas en campo.
         </p>
       </main>
