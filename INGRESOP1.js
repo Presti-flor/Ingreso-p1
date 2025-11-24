@@ -1,10 +1,52 @@
 const express = require("express");
 const { writeToSheet, existsSameRecord, refreshCache } = require("./google-sheets");
+const { Pool } = require("pg");
 
 const app = express();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// 🔌 Conexión a PostgreSQL (Railway)
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL, // En Railway pones esta variable
+  ssl: {
+    rejectUnauthorized: false, // Railway normalmente necesita esto en true->false para Node simple
+  },
+});
+
+// 👉 Función para guardar en Postgres
+async function saveToPostgres({ id, variedad, bloque, tallos, tamali, fecha, etapa }) {
+  // Asegúrate de crear esta tabla en tu BD:
+  //
+  // CREATE TABLE IF NOT EXISTS registros_flores (
+  //   id SERIAL PRIMARY KEY,
+  //   id_qr TEXT NOT NULL,
+  //   variedad TEXT NOT NULL,
+  //   bloque INTEGER NOT NULL,
+  //   tallos INTEGER NOT NULL,
+  //   tamali TEXT NOT NULL,
+  //   fecha DATE NOT NULL,
+  //   etapa TEXT,
+  //   creado_en TIMESTAMPTZ DEFAULT NOW(),
+  //   CONSTRAINT ux_registro_unico UNIQUE (id_qr, variedad, bloque, tallos, tamali, fecha, etapa)
+  // );
+  //
+  const query = `
+    INSERT INTO registros_flores
+      (id_qr, variedad, bloque, tallos, tamali, fecha, etapa)
+    VALUES
+      ($1,   $2,      $3,    $4,     $5,    $6,    $7)
+    ON CONFLICT (id_qr, variedad, bloque, tallos, tamali, fecha, etapa)
+    DO NOTHING
+    RETURNING *;
+  `;
+
+  const values = [id, variedad, parseInt(bloque), tallos, tamali, fecha, etapa || null];
+
+  const result = await pool.query(query, values);
+  return result.rows[0] || null; // null si fue conflicto (ya existía)
+}
 
 // Lista de IPs autorizadas
 const authorizedIPs = [
@@ -28,7 +70,7 @@ function validateIP(req) {
   return authorizedIPs.includes(clientIP);
 }
 
-// 👉 Lógica principal sin PostgreSQL
+// 👉 Lógica principal AHORA también con PostgreSQL
 async function processAndSaveData({
   id,
   variedad,
@@ -67,7 +109,18 @@ async function processAndSaveData({
     }
   }
 
-  // Guardar solo en Google Sheets
+  // 🟢 Guardar primero en PostgreSQL
+  await saveToPostgres({
+    id,
+    variedad,
+    bloque,
+    tallos: tallosNum,
+    tamali,
+    fecha: fechaProcesada,
+    etapa,
+  });
+
+  // 🟢 Luego seguir guardando en Google Sheets (como respaldo)
   await writeToSheet({
     id,
     variedad,
@@ -78,7 +131,7 @@ async function processAndSaveData({
     etapa,
   });
 
-  console.log("✅ Registrado correctamente en Sheets:", {
+  console.log("✅ Registrado correctamente en Postgres + Sheets:", {
     id,
     variedad,
     bloque,
@@ -259,24 +312,24 @@ app.get("/api/registrar", async (req, res) => {
       force: forceFlag,
     });
 
-   // ✅ REGISTRO EXITOSO
-return res.send(
-  baseTemplate({
-    title: "Registro guardado correctamente",
-    bgColor: "#ecfdf3",          // Verde muy suave
-    textColor: "#40ff00ff",        // Verde oscuro para buena lectura
-    bodyHtml: `
-      <p style="text-align:center;font-size:3rem;margin-bottom:8px;">✅</p>
+    // ✅ REGISTRO EXITOSO
+    return res.send(
+      baseTemplate({
+        title: "Registro guardado correctamente",
+        bgColor: "#ecfdf3",          // Verde muy suave
+        textColor: "#064e3b",        // Verde oscuro para buena lectura
+        bodyHtml: `
+          <p style="text-align:center;font-size:3rem;margin-bottom:8px;">✅</p>
 
-      <p style="margin-bottom:10px; font-size:1.1rem; color:#064e3b;">
-        Variedad: <span class="highlight">${variedad}</span><br/>
-        Bloque: <span class="highlight">${bloque}</span><br/>
-        Tallos: <span class="highlight">${tallos}</span><br/>
-        Tamaño: <span class="highlight">${tamali}</span>
-      </p>
-    `,
-  })
-);
+          <p style="margin-bottom:10px; font-size:1.1rem; color:#064e3b;">
+            Variedad: <span class="highlight">${variedad}</span><br/>
+            Bloque: <span class="highlight">${bloque}</span><br/>
+            Tallos: <span class="highlight">${tallos}</span><br/>
+            Tamaño: <span class="highlight">${tamali}</span>
+          </p>
+        `,
+      })
+    );
   } catch (err) {
     console.error("❌ Error en /api/registrar:", err);
 
@@ -500,7 +553,7 @@ app.get("/", (req, res) => {
       <main class="card">
         <div class="tag">Panel técnico</div>
         <h1> Sistema de Registro de Flores 🌹</h1>
-        <p>Endpoint disponible para lectura de códigos QR y registro en Google Sheets.</p>
+        <p>Endpoint disponible para lectura de códigos QR y registro en Google Sheets + PostgreSQL.</p>
         <p>Ejemplo de uso:</p>
         <code>
           /api/registrar?id=1&variedad=Freedom&bloque=6&tallos=20&tamali=Largo
@@ -534,7 +587,6 @@ app.get("/admin/refresh-cache", async (req, res) => {
     });
   }
 });
-
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
