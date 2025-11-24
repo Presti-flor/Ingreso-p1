@@ -34,10 +34,10 @@ async function saveToPostgres({ id, variedad, bloque, tallos, tamali, fecha, eta
   //
   const query = `
     INSERT INTO registrosp1
-      (id_qr, variedad, bloque, tallos, tamali, fecha, etapa)
+      (id, variedad, bloque, tallos, tamaño, fecha, etapa)
     VALUES
       ($1,   $2,      $3,    $4,     $5,    $6,    $7)
-    ON CONFLICT (id_qr, variedad, bloque, tallos, tamali, fecha, etapa)
+    ON CONFLICT (id, variedad, bloque, tallos, tamali, fecha, etapa)
     DO NOTHING
     RETURNING *;
   `;
