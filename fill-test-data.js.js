@@ -17,7 +17,7 @@ async function testGoogleSheets() {
   if (!sheet) {
     sheet = await doc.addSheet({
       title: 'Ingreso P1',
-      headerValues: ['id', 'variedad', 'bloque', 'tallos', 'tamali', 'fecha', 'etapa', 'creado_iso'],
+      headerValues: ['id', 'variedad', 'bloque', 'tallos', 'tamano', 'fecha', 'etapa', 'creado_iso'],
     });
   }
 
@@ -48,7 +48,7 @@ async function testGoogleSheets() {
     variedad: 'Rosa',
     bloque: 5,
     tallos: 30,
-    tamali: 'Mediano',
+    tamano: 'Mediano',
     fecha: '2025-09-08',
     etapa: 'Ingreso',
     creado_iso: new Date().toISOString(),

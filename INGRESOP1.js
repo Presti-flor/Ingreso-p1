@@ -15,17 +15,17 @@ const pool = new Pool({
   },
 });
 
-async function saveToPostgres({ id, variedad, bloque, tallos, tamaño, fecha, etapa }) {
+async function saveToPostgres({ id, variedad, bloque, tallos, tamano, fecha, etapa }) {
   const query = `
     INSERT INTO registrosp1
-      (id, variedad, bloque, tallos, tamaño, fecha, etapa)
+      (id, variedad, bloque, tallos, tamano, fecha, etapa)
     VALUES
-      ($1,   $2,      $3,    $4,     $5,    $6,    $7)
+      ($1,   $2,      $3,    $4,    $5,    $6,    $7)
     ON CONFLICT DO NOTHING
     RETURNING *;
   `;
 
-  const values = [id, variedad, parseInt(bloque), tallos, tamaño, fecha, etapa || null];
+  const values = [id, variedad, parseInt(bloque), tallos, tamano, fecha, etapa || null];
 
   console.log("🧪 INSERT Postgres →", query);
   console.log("🧪 VALUES →", values);
@@ -33,6 +33,7 @@ async function saveToPostgres({ id, variedad, bloque, tallos, tamaño, fecha, et
   const result = await pool.query(query, values);
   return result.rows[0] || null;
 }
+
 // Lista de IPs autorizadas
 const authorizedIPs = [
   "190.60.35.50",
@@ -61,14 +62,14 @@ async function processAndSaveData({
   variedad,
   bloque,
   tallos,
-  tamaño,
+  tamano,
   fecha,
   etapa,
   force,
 }) {
   if (!id) throw new Error("Falta el parámetro id");
-  if (!variedad || !bloque || !tallos || !tamaño) {
-    throw new Error("Faltan datos obligatorios: variedad, bloque, tallos, tamaño");
+  if (!variedad || !bloque || !tallos || !tamano) {
+    throw new Error("Faltan datos obligatorios: variedad, bloque, tallos, tamano");
   }
 
   const tallosNum = parseInt(tallos);
@@ -82,7 +83,7 @@ async function processAndSaveData({
       variedad,
       bloque,
       tallos: tallosNum,
-      tamaño,
+      tamano,
       fecha: fechaProcesada,
       etapa,
     });
@@ -100,7 +101,7 @@ async function processAndSaveData({
     variedad,
     bloque,
     tallos: tallosNum,
-    tamaño,
+    tamano,
     fecha: fechaProcesada,
     etapa,
   });
@@ -111,7 +112,7 @@ async function processAndSaveData({
     variedad,
     bloque,
     tallos: tallosNum,
-    tamaño,
+    tamano,
     fecha: fechaProcesada,
     etapa,
   });
@@ -121,7 +122,7 @@ async function processAndSaveData({
     variedad,
     bloque,
     tallos: tallosNum,
-    tamaño,
+    tamano,
     fecha: fechaProcesada,
     etapa,
   });
@@ -265,13 +266,13 @@ app.get("/api/registrar", async (req, res) => {
         );
     }
 
-    // Aquí aceptamos tanto tamali (QR viejo) como tamaño (si algún día lo cambias)
-    const { id, variedad, bloque, tallos, tamali, tamaño, fecha, etapa, force } = req.query;
-    const tamañoFinal = tamaño || tamali;
+    // Aquí aceptamos tanto tamali (QR viejo) como tamano (si algún día lo cambias)
+    const { id, variedad, bloque, tallos, tamali, tamano, fecha, etapa, force } = req.query;
+    const tamanoFinal = tamano || tamali;
 
     const forceFlag = force === "true" || force === "1";
 
-    if (!id || !variedad || !bloque || !tallos || !tamañoFinal) {
+    if (!id || !variedad || !bloque || !tallos || !tamanoFinal) {
       return res
         .status(400)
         .send(
@@ -282,7 +283,7 @@ app.get("/api/registrar", async (req, res) => {
             textColor: "#78350f",
             bodyHtml: `
               <p>El código escaneado no trae toda la información necesaria.</p>
-              <p style="margin-top:8px;">Verifica que el QR tenga: <span class="highlight">id, variedad, bloque, tallos y tamaño</span>.</p>
+              <p style="margin-top:8px;">Verifica que el QR tenga: <span class="highlight">id, variedad, bloque, tallos y tamano</span>.</p>
               <p class="small">Puedes escanear nuevamente el código o pedir que generen uno actualizado.</p>
             `,
           })
@@ -294,7 +295,7 @@ app.get("/api/registrar", async (req, res) => {
       variedad,
       bloque,
       tallos,
-      tamaño: tamañoFinal,
+      tamano: tamanoFinal,
       fecha,
       etapa,
       force: forceFlag,
@@ -313,7 +314,7 @@ app.get("/api/registrar", async (req, res) => {
             Variedad: <span class="highlight">${variedad}</span><br/>
             Bloque: <span class="highlight">${bloque}</span><br/>
             Tallos: <span class="highlight">${tallos}</span><br/>
-            Tamaño: <span class="highlight">${tamañoFinal}</span>
+            Tamano: <span class="highlight">${tamanoFinal}</span>
           </p>
         `,
       })
@@ -544,7 +545,7 @@ app.get("/", (req, res) => {
         <p>Endpoint disponible para lectura de códigos QR y registro en Google Sheets + PostgreSQL.</p>
         <p>Ejemplo de uso:</p>
         <code>
-          /api/registrar?id=1&variedad=Freedom&bloque=6&tallos=20&tamali=Largo
+          /api/registrar?id=1&variedad=Freedom&bloque=6&tallos=20&tamano=Largo
         </code>
         <p style="margin-top:12px;font-size:0.9rem;opacity:0.8%;">
           El procesamiento es ligero y está optimizado para respuestas rápidas en campo.
