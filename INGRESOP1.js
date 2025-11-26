@@ -15,7 +15,14 @@ const pool = new Pool({
   },
 });
 
+// 👉 Guarda en Postgres (bloque como numérico/decimal, respeta el punto)
 async function saveToPostgres({ id, variedad, bloque, tallos, tamano, fecha, etapa }) {
+  // Convertimos el bloque a número (acepta 1, 1.1, 3.5, etc.)
+  const bloqueNum = Number(bloque);
+  if (Number.isNaN(bloqueNum)) {
+    throw new Error("El parámetro bloque debe ser numérico (puede tener decimales, ej: 1.1).");
+  }
+
   const query = `
     INSERT INTO registrosp1
       (id, variedad, bloque, tallos, tamano, fecha, etapa)
@@ -25,7 +32,7 @@ async function saveToPostgres({ id, variedad, bloque, tallos, tamano, fecha, eta
     RETURNING *;
   `;
 
-  const values = [id, variedad, parseInt(bloque), tallos, tamano, fecha, etapa || null];
+  const values = [id, variedad, bloqueNum, tallos, tamano, fecha, etapa || null];
 
   console.log("🧪 INSERT Postgres →", query);
   console.log("🧪 VALUES →", values);
@@ -72,8 +79,12 @@ async function processAndSaveData({
     throw new Error("Faltan datos obligatorios: variedad, bloque, tallos, tamano");
   }
 
-  const tallosNum = parseInt(tallos);
+  const tallosNum = parseInt(tallos, 10);
   if (isNaN(tallosNum)) throw new Error("El parámetro tallos debe ser numérico");
+
+  // 👉 bloque puede venir como "1", "1.1", "3.5", etc.
+  const bloqueStr = String(bloque).trim();
+  if (!bloqueStr) throw new Error("El parámetro bloque es inválido");
 
   const fechaProcesada = fecha || new Date().toISOString().slice(0, 10);
 
@@ -81,7 +92,7 @@ async function processAndSaveData({
     const yaExiste = await existsSameRecord({
       id,
       variedad,
-      bloque,
+      bloque: bloqueStr,   // 👈 importante: lo mandamos tal cual (con punto si lo tiene)
       tallos: tallosNum,
       tamano,
       fecha: fechaProcesada,
@@ -99,7 +110,7 @@ async function processAndSaveData({
   await saveToPostgres({
     id,
     variedad,
-    bloque,
+    bloque: bloqueStr,  // saveToPostgres se encarga de convertir a Number
     tallos: tallosNum,
     tamano,
     fecha: fechaProcesada,
@@ -110,7 +121,7 @@ async function processAndSaveData({
   await writeToSheet({
     id,
     variedad,
-    bloque,
+    bloque: bloqueStr,  // aquí es texto, para que en Sheets se vea "1.1" tal cual
     tallos: tallosNum,
     tamano,
     fecha: fechaProcesada,
@@ -120,7 +131,7 @@ async function processAndSaveData({
   console.log("✅ Registrado correctamente en Postgres + Sheets:", {
     id,
     variedad,
-    bloque,
+    bloque: bloqueStr,
     tallos: tallosNum,
     tamano,
     fecha: fechaProcesada,
@@ -293,7 +304,7 @@ app.get("/api/registrar", async (req, res) => {
     await processAndSaveData({
       id,
       variedad,
-      bloque,
+      bloque,              // 👈 aquí puede venir "1.1" sin problema
       tallos,
       tamano: tamanoFinal,
       fecha,

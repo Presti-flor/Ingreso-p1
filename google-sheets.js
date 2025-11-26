@@ -79,7 +79,7 @@ function buildKey({ id, variedad, bloque, tallos, tamano, fecha, etapa }) {
   return [
     norm(id),
     norm(variedad),
-    norm(bloque),
+    norm(bloque),   // 👈 si bloque es "1.1", aquí queda "1.1"
     norm(tallos),
     norm(tamano),
     norm(fecha),
@@ -98,7 +98,7 @@ async function loadCacheFromSheet() {
     const rowData = {
       id: raw[0],
       variedad: raw[1],
-      bloque: raw[2],
+      bloque: raw[2],  // 👈 viene tal cual de Sheets (ej: 1.1)
       tallos: raw[3],
       tamano: raw[4],
       fecha: raw[5],
@@ -166,7 +166,8 @@ async function writeToSheet(data) {
   const rowObj = {
     id: data.id || new Date().getTime(),
     variedad: data.variedad,
-    bloque: data.bloque,
+    // 👇 Aseguramos que bloque sea string y no se deforme (ej: "1.1")
+    bloque: data.bloque != null ? String(data.bloque).trim() : '',
     tallos: data.tallos,
     tamano: data.tamano,
     fecha: data.fecha || new Date().toLocaleDateString('es-ES'),
